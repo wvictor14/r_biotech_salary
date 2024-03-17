@@ -2,6 +2,8 @@
 #' @import shiny shiny.fluent
 launch_app <- function(..., salaries = NULL) {
 
+  message('start')
+  tic('initalize done')
   if (is.null(data)) {
     data(salaries)
     salaries |>  glimpse()
@@ -13,6 +15,7 @@ launch_app <- function(..., salaries = NULL) {
 
   rb_ui <- rb_ui()
   rb_server <- rb_server
+  toc()
 
   shiny::shinyApp(rb_ui, rb_server, options = list(launch.browser = TRUE), ...)
 }
@@ -70,7 +73,7 @@ rb_ui <- function() {
       size = 4,
       style = "max-height: 250px;"),
       makeCard(content = shiny.fluent::Stack(
-        plotly::plotlyOutput("plot")
+        ggiraph::girafeOutput("plot", height = '250px')
       ),
       size = 8,
       style = "max-height: 250px")
@@ -100,39 +103,52 @@ rb_ui <- function() {
 #' @param session session
 #' @export
 #' @import dplyr ggplot2
+#' @importFrom tictoc tic toc
 rb_server <- function(input, output, session) {
 
   .salaries <- reactive({
+    message('being data filter')
+    tic('data filtered')
     req(input$fromDate)
-    salaries |>
+    .df <-salaries |>
       filter(
         date >= input$fromDate,
         date <= input$toDate,
         title_general %in% input$title,
         location_country %in% input$location
       )
+    toc()
+    return(.df)
   })
 
   #plot
   output$salary_stats_text <- gt::render_gt({
-    plot_salary_title(.salaries())
+    message('stats start')
+    tic('stats end')
+    gt <- plot_salary_title(.salaries())
+    toc()
+    return(gt)
   })
-  output$plot <- plotly::renderPlotly({
-    plot_salary(.salaries(), title = 'Total Compensation (Base + Bonus)')
-  })
+  #output$plot <- ggiraph::renderGirafe({
+  #  plot_salary(.salaries(), title = 'Total Compensation (Base + Bonus)') |>
+  #    ggiraph::girafe(width_svg = 10)
+  #})
 
-  output$plot_experience <- plotly::renderPlotly({
+  #output$plot_experience <- plotly::renderPlotly({
 
     # suppress warnings for app session
-    storeWarn<- getOption("warn")
-    options(warn = -1)
+  #  storeWarn<- getOption("warn")
+  #  options(warn = -1)
 
-    plot_experience(.salaries())
-  })
+  #  plot_experience(.salaries())
+  #})
 
   # render the table + other components
   output$analysis <- gt::render_gt({
     items_list <- if(nrow(.salaries()) > 0){
+
+      message('gt start')
+      tictoc::tic('gt done')
       selected_cols <- .salaries() |>
         select(
           title_general,
@@ -142,7 +158,7 @@ rb_server <- function(input, output, session) {
           date
         )
 
-      selected_cols |>
+      out <- selected_cols |>
         gt::gt() |>
         gt::cols_label(
           title_general = "Job title",
@@ -155,6 +171,9 @@ rb_server <- function(input, output, session) {
         gt::fmt_percent(columns = bonus_pct) |>
         gt::fmt_currency(columns = salary_base) |>
         gt::opt_interactive()
+
+      toc()
+      return(out)
     } else {
       p("No matching salary data.")
     }
