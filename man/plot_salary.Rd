@@ -7,7 +7,13 @@
 \usage{
 calculate_salary_stats(.df, x)
 
-plot_salary(.df, x = salary_total, fill = title_general, .type = "plotly")
+plot_salary(
+  .df,
+  x = salary_total,
+  fill = title_general,
+  title = "",
+  .interactive = TRUE
+)
 }
 \arguments{
 \item{.df}{salary data}
@@ -21,6 +27,7 @@ data(salaries)
 salaries_sub <- salaries |>
   dplyr::filter(title_general \%in\% c('Scientist', 'Principal Scientist'),
          stringr::str_detect(location_country, 'United States') )
-plot_salary(salaries_sub)
+ggiraph::girafe(plot_salary(salaries_sub))
+print(x)
 
 }

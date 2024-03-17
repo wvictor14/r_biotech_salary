@@ -1,4 +1,3 @@
-
 #' @rdname plot_salary
 #' @export
 calculate_salary_stats <- function(.df, x) {
@@ -20,13 +19,14 @@ calculate_salary_stats <- function(.df, x) {
 #' salaries_sub <- salaries |>
 #'   dplyr::filter(title_general %in% c('Scientist', 'Principal Scientist'),
 #'          stringr::str_detect(location_country, 'United States') )
-#' plot_salary(salaries_sub)
+#' ggiraph::girafe(plot_salary(salaries_sub))
+#' print(x)
 #'
 #' @param .df salary data
 #' @export
 plot_salary <- function(
     .df, x = salary_total, fill = title_general, title = '',
-    .type = 'plotly') {
+    .interactive = TRUE) {
 
   .df <- .df |>  filter(!is.na({{x}}), !is.na({{fill}}))
 
@@ -36,7 +36,16 @@ plot_salary <- function(
     x = {{x}}, fill = {{fill}})) +
     geom_vline(
       data = stats, aes(xintercept = x, color = stat), linetype = 'twodash') +
-    geom_histogram(bins = 25, aes(y = after_stat(count / sum(count))))  +
+    ggiraph::geom_histogram_interactive(
+      bins = 25,
+      aes(
+        y = after_stat(count / sum(count)),
+        tooltip =  glue::glue(
+          "{.f}: {.p}",
+          .f = fill,
+          .p = scales::percent(after_stat(count / sum(count)))
+          ),
+        group = {{fill}}))  +
     theme_minimal() +
     theme(
       axis.title.y = element_text(angle = 0, vjust = 0.5),
@@ -44,7 +53,6 @@ plot_salary <- function(
       axis.line = element_line(),
       legend.position = 'bottom') +
     paletteer::scale_fill_paletteer_d('ggthemes::Tableau_20', guide ='none') +
-    #004488FF #DDAA33FF #BB5566FF
     paletteer::scale_color_paletteer_d('khroma::highcontrast') +
     scale_y_continuous(
       label = ~scales::percent(.x, accuracy = 1),
@@ -53,15 +61,8 @@ plot_salary <- function(
     scale_x_continuous(label = scales::dollar, expand = expansion())  +
     labs(title = title, color = '', x = '', y = '% of jobs')
 
-  stopifnot(.type %in% c('plotly', 'ggplot2'))
-  if (.type == 'plotly') {
-    p <- plotly::ggplotly(p, height = '250')
-  }
-
-  suppressWarnings({ p })
+  suppressWarnings({print(p) })
 }
-
-
 #' Make the title for salary histogram
 #'
 #' @param .df salaries
