@@ -86,36 +86,52 @@ plot_salary <- function(
 #' salaries_sci <- salaries |>
 #'   filter(title_general == 'Scientist', location_country == 'United States Of America')
 #' plot_experience(salaries_sci)
-plot_experience <- function(.df, fill = title_general, .plotly =TRUE) {
+plot_experience <- function(.df, fill = title_general, height = 250, .plotly =TRUE) {
 
-  p <- .df |>
+  browser()
+  .cut <- .df |>
     arrange(years_of_experience) |>
     mutate(exp_binned = cut(
       years_of_experience,
       breaks = c(-Inf, 2, 5, 9, 14, Inf),
-      labels = c('1-2', '3-5', '6-9', '10-14', '15+'))) |>
-    ggplot(aes(x = exp_binned, y = salary_total, fill = {{fill}})) +
-    geom_boxplot(outlier.shape = NA, position = position_dodge()) +
+      labels = c('1-2', '3-5', '6-9', '10-14', '15+')
+    ) |> forcats::fct_rev())
+
+  .summarized <- .cut |>
+    summarize(
+      .by = c(title_general, exp_binned),
+      n_obs = n(),
+      med = median(salary_total, na.rm = TRUE),
+      me = mean(salary_total, na.rm = TRUE),
+      q25 = quantile(salary_total, c(0.25), na.rm = TRUE),
+      q75 = quantile(salary_total, c(0.75), na.rm = TRUE)
+    )
+
+  p <- .summarized |>
+    ggplot(aes(y = exp_binned, x = med, fill = {{fill}})) +
+    geom_bar(stat = 'identity') +
+    geom_jitter(data = .cut, aes(x = salary_total), width = 0.5, alpha = 0.5) +
+    #geom_boxplot(outlier.shape = NA, position = position_dodge()) +
     theme_minimal() +
     theme(
       panel.border = element_blank(),
-      axis.line = element_line(),
-      axis.title.y = element_blank(),
-      panel.grid.minor.y = element_line(),
-      panel.grid.major.x = element_blank(),
+      axis.line.y = element_line(),
+      axis.title.x = element_blank(),
+      panel.grid.minor.x = element_line(),
+      panel.grid.major.y = element_blank(),
       legend.title = element_blank()
     ) +
-    paletteer::scale_fill_paletteer_d(pal_paletteer()) +
-    scale_y_continuous(
+    paletteer::scale_fill_paletteer_d(pal_paletteer(), guide = 'none') +
+    scale_x_continuous(
       labels = scales::dollar, limits = c(0, NA),
       expand = expansion(c(0, 0.1))
     ) +
     labs(
       title = 'Total Compensation by Years of Experience',
-      x = 'Years of Experience')
+      y = 'Years of Experience')
 
   if (.plotly) {
-    p <- plotly::ggplotly(p, height = 250) |> plotly::layout(boxmode = "group")
+    p <- plotly::ggplotly(p, height = height)
   }
 
   suppressWarnings({ p })
