@@ -88,14 +88,15 @@ plot_salary <- function(
 #' plot_experience(salaries_sci)
 plot_experience <- function(.df, fill = title_general, height = 250, .plotly =TRUE) {
 
-  browser()
   .cut <- .df |>
     arrange(years_of_experience) |>
-    mutate(exp_binned = cut(
-      years_of_experience,
-      breaks = c(-Inf, 2, 5, 9, 14, Inf),
-      labels = c('1-2', '3-5', '6-9', '10-14', '15+')
-    ) |> forcats::fct_rev())
+    mutate(
+      exp_binned = cut(
+        years_of_experience,
+        breaks = c(-Inf, 2, 5, 9, 14, Inf),
+        labels = c('1-2', '3-5', '6-9', '10-14', '15+')
+      ) |> forcats::fct_rev()
+    )
 
   .summarized <- .cut |>
     summarize(
@@ -106,29 +107,44 @@ plot_experience <- function(.df, fill = title_general, height = 250, .plotly =TR
       q25 = quantile(salary_total, c(0.25), na.rm = TRUE),
       q75 = quantile(salary_total, c(0.75), na.rm = TRUE)
     )
-
   p <- .summarized |>
     ggplot(aes(y = exp_binned, x = med, fill = {{fill}})) +
     geom_bar(stat = 'identity') +
-    geom_jitter(data = .cut, aes(x = salary_total), width = 0.5, alpha = 0.5) +
+    geom_text(
+      aes(
+        label = stringr::str_c(scales::dollar(med/1000, accuracy = 1), 'K'),
+        x = med*0.4
+      ),
+      color = 'white', hjust = 0,
+      size = 4, size.unit = 'pt'
+      ) +
+    #geom_jitter(data = .cut, aes(x = salary_total), width = 0.5, alpha = 0.5) +
     #geom_boxplot(outlier.shape = NA, position = position_dodge()) +
     theme_minimal() +
     theme(
       panel.border = element_blank(),
       axis.line.y = element_line(),
       axis.title.x = element_blank(),
+      axis.title.y = element_text(angle = 0, vjust = 0.5, hjust = 1),
       panel.grid.minor.x = element_line(),
       panel.grid.major.y = element_blank(),
       legend.title = element_blank()
     ) +
+    facet_grid(cols = vars({{fill}})) +
     paletteer::scale_fill_paletteer_d(pal_paletteer(), guide = 'none') +
     scale_x_continuous(
-      labels = scales::dollar, limits = c(0, NA),
+      labels =  scales::dollar_format(scale = .001, suffix = "K"),
+      limits = c(0, NA),
+      breaks = ifelse(
+        length(unique(.df$title_general)) == 1,
+        scales::breaks_pretty(n = 3),
+        scales::breaks_pretty(n = 2)
+      ),
       expand = expansion(c(0, 0.1))
     ) +
     labs(
       title = 'Total Compensation by Years of Experience',
-      y = 'Years of Experience')
+      y = 'Years\nof\nExperience')
 
   if (.plotly) {
     p <- plotly::ggplotly(p, height = height)
