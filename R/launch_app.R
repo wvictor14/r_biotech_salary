@@ -94,7 +94,7 @@ rb_ui <- function() {
       tokens = list(childrenGap = 10), horizontal = TRUE,
       makeCard(
         content = div(
-          style="max-height: 275px; overflow: auto",
+          style="max-height: 275px",
           gt::gt_output('table_career_progression')
         ),
         size = 4,

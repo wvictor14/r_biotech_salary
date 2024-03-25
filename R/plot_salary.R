@@ -26,6 +26,7 @@ calculate_salary_stats <- function(.df, x) {
 #' @export
 plot_salary <- function(
     .df, x = salary_total, fill = title_general, title = '',
+    height = 275,
     .type = 'plotly') {
 
   .df <- .df |>  filter(!is.na({{x}}), !is.na({{fill}}))
@@ -36,17 +37,17 @@ plot_salary <- function(
     geom_vline(
       xintercept = stats$x[1],
       linetype = 'twodash',
-      color = '#004488FF'
+      color = 'black'
     ) +
     geom_vline(
       xintercept = stats$x[2],
       linetype = 'twodash',
-      color = '#DDAA33FF'
+      color = 'black'
     ) +
     geom_vline(
       xintercept = stats$x[3],
       linetype = 'twodash',
-      color = '#BB5566FF'
+      color = 'black'
     ) +
     geom_histogram(bins = 25, aes(y = after_stat(count / sum(count))))  +
     theme_minimal() +
@@ -65,7 +66,7 @@ plot_salary <- function(
 
   stopifnot(.type %in% c('plotly', 'ggplot2'))
   if (.type == 'plotly') {
-    p <- plotly::ggplotly(p, height = '250')
+    p <- plotly::ggplotly(p, height = height)
   }
 
   suppressWarnings({ p })
@@ -86,7 +87,7 @@ plot_salary <- function(
 #' salaries_sci <- salaries |>
 #'   filter(title_general == 'Scientist', location_country == 'United States Of America')
 #' plot_experience(salaries_sci)
-plot_experience <- function(.df, fill = title_general, height = 250, .plotly =TRUE) {
+plot_experience <- function(.df, fill = title_general, height = 275, .plotly =TRUE) {
 
   .cut <- .df |>
     arrange(years_of_experience) |>

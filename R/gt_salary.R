@@ -24,17 +24,22 @@ gt_salary_stats <- function(.df, .return_data = FALSE, .gt = TRUE) {
 
   if (.return_data) { return(l) }
 
-
+  .color <- pal_salary()['total']
+  .color_base <- pal_salary()['base']
+  .color_bonus <- pal_salary()['bonus']
   title <- tibble(
     left = c('Average Total Pay', 'Total Pay Range', 'Base Pay', 'Bonus'),
     right = c(
-      '<b><a style="color:#DDAA33FF">{l$average}</b></a>',
       glue::glue(
-        '<b><a style="color:#004488FF">{l$total_min}</b></a>',
-        ' - ',
-        '<b><a style="color:#BB5566FF">{l$total_max}</b></a>'
+        '<b><a style="color:{.color}">{l$average}</b></a>'
       ),
-      "{l$base_min} - {l$base_max}", "{l$bonus_min} - {l$bonus_max}")
+      glue::glue(
+        '<b><a style="color:{.color}">{l$total_min}</b></a>',
+        ' - ',
+        '<b><a style="color:{.color}">{l$total_max}</b></a>'
+      ),
+      '<b><a style="color:{.color_base}">{l$base_min} - {l$base_max}</a></b>',
+      '<b><a style="color:{.color_bonus}">{l$bonus_min} - {l$bonus_max}</a></b>')
   ) |>
     mutate(right = purrr::map_chr(right, ~glue::glue(.x)))
 
@@ -109,8 +114,8 @@ gt_career_progression <- function(.df) {
 
     # theming
     gt::tab_style(
-      style = cell_borders(style = 'hidden'),
-      locations = cells_body(
+      style = gt::cell_borders(style = 'hidden'),
+      locations = gt::cells_body(
         columns = c(everything(), -title_category))
     ) |>
     gt::tab_style(
